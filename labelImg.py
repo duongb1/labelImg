@@ -974,9 +974,12 @@ class MainWindow(QMainWindow, WindowMixin):
             shape.line_color = generate_color_by_text(shape.label)
             shape.fill_color = generate_color_by_text(shape.label)
             self.set_dirty()
-        item.setToolTip(shape.description or '')
-        else:  # User probably changed item visibility
-            self.canvas.set_shape_visible(shape, item.checkState() == Qt.Checked)
+            item.setToolTip(shape.description or "")
+            return
+
+        item.setToolTip(shape.description or "")
+        # User probably changed item visibility
+        self.canvas.set_shape_visible(shape, item.checkState() == Qt.Checked)
 
     # Callback functions:
     def new_shape(self):
