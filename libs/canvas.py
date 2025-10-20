@@ -514,6 +514,22 @@ class Canvas(QWidget):
             painter.end()
 
         p.drawPixmap(0, 0, temp)
+
+        # Draw 3x3 grid overlay to aid annotation placement. The grid is only
+        # rendered for display purposes and is never persisted to the
+        # annotation data or image files.
+        if not temp.isNull():
+            grid_pen = QPen(QColor(255, 255, 255, 180))
+            grid_pen.setStyle(Qt.DashLine)
+            p.setPen(grid_pen)
+            width_third = temp.width() / 3.0
+            height_third = temp.height() / 3.0
+            for i in range(1, 3):
+                x = int(round(i * width_third))
+                y = int(round(i * height_third))
+                p.drawLine(x, 0, x, temp.height())
+                p.drawLine(0, y, temp.width(), y)
+
         Shape.scale = self.scale
         Shape.label_font_size = self.label_font_size
         for shape in self.shapes:
@@ -677,9 +693,10 @@ class Canvas(QWidget):
         points = [p1 + p2 for p1, p2 in zip(self.selected_shape.points, [step] * 4)]
         return True in map(self.out_of_pixmap, points)
 
-    def set_last_label(self, text, line_color=None, fill_color=None):
+    def set_last_label(self, text, line_color=None, fill_color=None, description=''):
         assert text
         self.shapes[-1].label = text
+        self.shapes[-1].description = description
         if line_color:
             self.shapes[-1].line_color = line_color
 

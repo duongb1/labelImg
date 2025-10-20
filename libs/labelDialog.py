@@ -21,6 +21,11 @@ class LabelDialog(QDialog):
         self.edit.setValidator(label_validator())
         self.edit.editingFinished.connect(self.post_process)
 
+        self.description_edit = QTextEdit()
+        self.description_edit.setPlaceholderText(self.tr("Enter description"))
+        self.description_edit.setAcceptRichText(False)
+        self.description_edit.setFixedHeight(self.fontMetrics().lineSpacing() * 4)
+
         model = QStringListModel()
         model.setStringList(list_item)
         completer = QCompleter()
@@ -34,8 +39,11 @@ class LabelDialog(QDialog):
         bb.rejected.connect(self.reject)
 
         layout = QVBoxLayout()
+        form_layout = QFormLayout()
+        form_layout.addRow(self.tr("Label"), self.edit)
+        form_layout.addRow(self.tr("Description"), self.description_edit)
+        layout.addLayout(form_layout)
         layout.addWidget(bb, alignment=Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.edit)
 
         if list_item is not None and len(list_item) > 0:
             self.list_widget = QListWidget(self)
@@ -54,7 +62,7 @@ class LabelDialog(QDialog):
     def post_process(self):
         self.edit.setText(trimmed(self.edit.text()))
 
-    def pop_up(self, text='', move=True):
+    def pop_up(self, text='', description='', move=True):
         """
         Shows the dialog, setting the current text to `text`, and blocks the caller until the user has made a choice.
         If the user entered a label, that label is returned, otherwise (i.e. if the user cancelled the action)
@@ -63,6 +71,7 @@ class LabelDialog(QDialog):
         self.edit.setText(text)
         self.edit.setSelection(0, len(text))
         self.edit.setFocus(Qt.PopupFocusReason)
+        self.description_edit.setPlainText(description or '')
         if move:
             cursor_pos = QCursor.pos()
 
@@ -84,7 +93,11 @@ class LabelDialog(QDialog):
             if cursor_pos.y() > max_global.y():
                 cursor_pos.setY(max_global.y())
             self.move(cursor_pos)
-        return trimmed(self.edit.text()) if self.exec_() else None
+        if self.exec_():
+            label = trimmed(self.edit.text())
+            description_text = self.description_edit.toPlainText().strip()
+            return label, description_text
+        return None, None
 
     def list_item_click(self, t_qlist_widget_item):
         text = trimmed(t_qlist_widget_item.text())
