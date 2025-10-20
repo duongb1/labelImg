@@ -677,9 +677,10 @@ class Canvas(QWidget):
         points = [p1 + p2 for p1, p2 in zip(self.selected_shape.points, [step] * 4)]
         return True in map(self.out_of_pixmap, points)
 
-    def set_last_label(self, text, line_color=None, fill_color=None):
+    def set_last_label(self, text, line_color=None, fill_color=None, description=''):
         assert text
         self.shapes[-1].label = text
+        self.shapes[-1].description = description
         if line_color:
             self.shapes[-1].line_color = line_color
 

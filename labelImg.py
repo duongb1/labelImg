@@ -121,6 +121,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.items_to_shapes = {}
         self.shapes_to_items = {}
         self.prev_label_text = ''
+        self.prev_description_text = ''
 
         list_layout = QVBoxLayout()
         list_layout.setContentsMargins(0, 0, 0, 0)
@@ -650,6 +651,8 @@ class MainWindow(QMainWindow, WindowMixin):
         self.canvas.reset_state()
         self.label_coordinates.clear()
         self.combo_box.cb.clear()
+        self.prev_label_text = ''
+        self.prev_description_text = ''
 
     def current_item(self):
         items = self.label_list.selectedItems()
@@ -755,10 +758,22 @@ class MainWindow(QMainWindow, WindowMixin):
         item = self.current_item()
         if not item:
             return
-        text = self.label_dialog.pop_up(item.text())
-        if text is not None:
+        shape = self.items_to_shapes.get(item)
+        description = ''
+        if shape:
+            description = shape.description
+        text, description = self.label_dialog.pop_up(item.text(), description)
+        if text:
             item.setText(text)
             item.setBackground(generate_color_by_text(text))
+            item.setToolTip(description or '')
+            if shape:
+                if shape.label != text:
+                    shape.label = text
+                    color = generate_color_by_text(shape.label)
+                    shape.line_color = color
+                    shape.fill_color = color
+                shape.description = description
             self.set_dirty()
             self.update_combo_box()
 
@@ -818,6 +833,7 @@ class MainWindow(QMainWindow, WindowMixin):
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
         item.setCheckState(Qt.Checked)
         item.setBackground(generate_color_by_text(shape.label))
+        item.setToolTip(shape.description or '')
         self.items_to_shapes[item] = shape
         self.shapes_to_items[shape] = item
         self.label_list.addItem(item)
@@ -837,8 +853,13 @@ class MainWindow(QMainWindow, WindowMixin):
 
     def load_labels(self, shapes):
         s = []
-        for label, points, line_color, fill_color, difficult in shapes:
-            shape = Shape(label=label)
+        for shape_data in shapes:
+            if len(shape_data) == 6:
+                label, points, line_color, fill_color, difficult, description = shape_data
+            else:
+                label, points, line_color, fill_color, difficult = shape_data
+                description = ''
+            shape = Shape(label=label, description=description)
             for x, y in points:
 
                 # Ensure the labels are within the bounds of the image. If not, fix them.
@@ -888,7 +909,8 @@ class MainWindow(QMainWindow, WindowMixin):
                         fill_color=s.fill_color.getRgb(),
                         points=[(p.x(), p.y()) for p in s.points],
                         # add chris
-                        difficult=s.difficult)
+                        difficult=s.difficult,
+                        description=s.description)
 
         shapes = [format_shape(shape) for shape in self.canvas.shapes]
         # Can add different annotation formats here
@@ -950,7 +972,9 @@ class MainWindow(QMainWindow, WindowMixin):
         if label != shape.label:
             shape.label = item.text()
             shape.line_color = generate_color_by_text(shape.label)
+            shape.fill_color = generate_color_by_text(shape.label)
             self.set_dirty()
+        item.setToolTip(shape.description or '')
         else:  # User probably changed item visibility
             self.canvas.set_shape_visible(shape, item.checkState() == Qt.Checked)
 
@@ -960,6 +984,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
         position MUST be in global coordinates.
         """
+        description = ''
         if not self.use_default_label_checkbox.isChecked():
             if len(self.label_hist) > 0:
                 self.label_dialog = LabelDialog(
@@ -968,18 +993,22 @@ class MainWindow(QMainWindow, WindowMixin):
             # Sync single class mode from PR#106
             if self.single_class_mode.isChecked() and self.lastLabel:
                 text = self.lastLabel
+                description = self.prev_description_text
             else:
-                text = self.label_dialog.pop_up(text=self.prev_label_text)
+                text, description = self.label_dialog.pop_up(text=self.prev_label_text,
+                                                             description=self.prev_description_text)
                 self.lastLabel = text
         else:
             text = self.default_label
+            description = ''
 
         # Add Chris
         self.diffc_button.setChecked(False)
-        if text is not None:
+        if text:
             self.prev_label_text = text
+            self.prev_description_text = description or ''
             generate_color = generate_color_by_text(text)
-            shape = self.canvas.set_last_label(text, generate_color, generate_color)
+            shape = self.canvas.set_last_label(text, generate_color, generate_color, description or '')
             self.add_label(shape)
             if self.beginner():  # Switch to edit mode.
                 self.canvas.set_editing(True)
