@@ -1389,14 +1389,22 @@ class MainWindow(QMainWindow, WindowMixin):
         else:
             target_dir_path = ustr(default_open_dir_path)
         self.last_open_dir = target_dir_path
-        self.import_dir_images(target_dir_path)
         self.default_save_dir = target_dir_path
+        self.import_dir_images(target_dir_path)
         if self.file_path and self.label_list.count() == 0:
             self.show_bounding_box_from_annotation_file(file_path=self.file_path)
 
     def import_dir_images(self, dir_path):
         if not self.may_continue() or not dir_path:
             return
+
+        # When switching directories, immediately clear any in-memory
+        # annotations so stale bounding boxes don't linger on the first
+        # image load.
+        normalized_target = os.path.abspath(dir_path)
+        normalized_current = os.path.abspath(self.dir_name) if self.dir_name else None
+        if normalized_current != normalized_target:
+            self.reset_state()
 
         self.last_open_dir = dir_path
         self.dir_name = dir_path
