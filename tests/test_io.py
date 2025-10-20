@@ -14,8 +14,8 @@ class TestPascalVocRW(unittest.TestCase):
         # Test Write/Read
         writer = PascalVocWriter('tests', 'test', (512, 512, 1), local_img_path='tests/test.512.512.bmp')
         difficult = 1
-        writer.add_bnd_box(60, 40, 430, 504, 'person', difficult)
-        writer.add_bnd_box(113, 40, 450, 403, 'face', difficult)
+        writer.add_bnd_box(60, 40, 430, 504, 'person', difficult, description='A person in the scene')
+        writer.add_bnd_box(113, 40, 450, 403, 'face', difficult, description='Close up of the face')
         writer.save('tests/test.xml')
 
         reader = PascalVocReader('tests/test.xml')
@@ -25,8 +25,10 @@ class TestPascalVocRW(unittest.TestCase):
         face = shapes[1]
         self.assertEqual(person_bnd_box[0], 'person')
         self.assertEqual(person_bnd_box[1], [(60, 40), (430, 40), (430, 504), (60, 504)])
+        self.assertEqual(person_bnd_box[5], 'A person in the scene')
         self.assertEqual(face[0], 'face')
         self.assertEqual(face[1], [(113, 40), (450, 40), (450, 403), (113, 403)])
+        self.assertEqual(face[5], 'Close up of the face')
 
 
 class TestCreateMLRW(unittest.TestCase):
