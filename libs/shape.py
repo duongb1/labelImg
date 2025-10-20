@@ -38,8 +38,9 @@ class Shape(object):
     scale = 1.0
     label_font_size = 8
 
-    def __init__(self, label=None, line_color=None, difficult=False, paint_label=False):
+    def __init__(self, label=None, line_color=None, difficult=False, paint_label=False, description=''):
         self.label = label
+        self.description = description
         self.points = []
         self.fill = False
         self.selected = False
@@ -197,6 +198,7 @@ class Shape(object):
         if self.fill_color != Shape.fill_color:
             shape.fill_color = self.fill_color
         shape.difficult = self.difficult
+        shape.description = self.description
         return shape
 
     def __len__(self):
