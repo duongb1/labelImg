@@ -77,10 +77,11 @@ class PascalVocWriter:
         segmented.text = '0'
         return top
 
-    def add_bnd_box(self, x_min, y_min, x_max, y_max, name, difficult):
+    def add_bnd_box(self, x_min, y_min, x_max, y_max, name, difficult, description=''):
         bnd_box = {'xmin': x_min, 'ymin': y_min, 'xmax': x_max, 'ymax': y_max}
         bnd_box['name'] = name
         bnd_box['difficult'] = difficult
+        bnd_box['description'] = description
         self.box_list.append(bnd_box)
 
     def append_objects(self, top):
@@ -88,6 +89,8 @@ class PascalVocWriter:
             object_item = SubElement(top, 'object')
             name = SubElement(object_item, 'name')
             name.text = ustr(each_object['name'])
+            description = SubElement(object_item, 'description')
+            description.text = ustr(each_object.get('description', ''))
             pose = SubElement(object_item, 'pose')
             pose.text = "Unspecified"
             truncated = SubElement(object_item, 'truncated')
@@ -140,13 +143,13 @@ class PascalVocReader:
     def get_shapes(self):
         return self.shapes
 
-    def add_shape(self, label, bnd_box, difficult):
+    def add_shape(self, label, bnd_box, difficult, description=''):
         x_min = int(float(bnd_box.find('xmin').text))
         y_min = int(float(bnd_box.find('ymin').text))
         x_max = int(float(bnd_box.find('xmax').text))
         y_max = int(float(bnd_box.find('ymax').text))
         points = [(x_min, y_min), (x_max, y_min), (x_max, y_max), (x_min, y_max)]
-        self.shapes.append((label, points, None, None, difficult))
+        self.shapes.append((label, points, None, None, difficult, description))
 
     def parse_xml(self):
         assert self.file_path.endswith(XML_EXT), "Unsupported file format"
@@ -167,5 +170,9 @@ class PascalVocReader:
             difficult = False
             if object_iter.find('difficult') is not None:
                 difficult = bool(int(object_iter.find('difficult').text))
-            self.add_shape(label, bnd_box, difficult)
+            description = ''
+            description_element = object_iter.find('description')
+            if description_element is not None and description_element.text is not None:
+                description = description_element.text
+            self.add_shape(label, bnd_box, difficult, description)
         return True
